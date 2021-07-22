@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
@@ -19,7 +20,7 @@ namespace SuperSocket.Server.AspNetCore
                 throw new ArgumentNullException(nameof(serverOptions));
             }
 
-            if (serverOptions.Listeners?.Count <= 0)
+            if (serverOptions.Listeners == null || !serverOptions.Listeners.Any())
             {
                 throw new ArgumentNullException(nameof(serverOptions.Listeners));
             }

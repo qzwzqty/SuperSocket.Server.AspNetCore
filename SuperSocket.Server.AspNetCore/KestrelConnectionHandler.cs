@@ -22,7 +22,7 @@ namespace SuperSocket.Server.AspNetCore
         private readonly ServerOptions _serverOptions;
         private int _sessionCount;
 
-        public int SessionCount => _sessionCount;
+        public int SessionCount => this._sessionCount;
 
         protected IMiddleware[] Middlewares { get; private set; }
 
@@ -34,48 +34,48 @@ namespace SuperSocket.Server.AspNetCore
             IServiceProvider serviceProvider,
             ILoggerFactory loggerFactory)
         {
-            _logger = logger;
-            _pipelineFilterFactory = pipelineFilterFactory;
-            _sessionFactory = sessionFactory;
-            _serviceProvider = serviceProvider;
-            _serverOptions = serverOptions.Value;
-            _serverOptions.Logger = loggerFactory.CreateLogger(nameof(IChannel));
-            InitializeMiddlewares();
+            this._logger = logger;
+            this._pipelineFilterFactory = pipelineFilterFactory;
+            this._sessionFactory = sessionFactory;
+            this._serviceProvider = serviceProvider;
+            this._serverOptions = serverOptions.Value;
+            this._serverOptions.Logger = loggerFactory.CreateLogger(nameof(IChannel));
+            this.InitializeMiddlewares();
 
-            IPackageHandler<TPackageInfo> packageHandler = serviceProvider.GetService<IPackageHandler<TPackageInfo>>()
+            var packageHandler = serviceProvider.GetService<IPackageHandler<TPackageInfo>>()
                ?? this.Middlewares.OfType<IPackageHandler<TPackageInfo>>().FirstOrDefault();
 
             if (packageHandler == null)
             {
-                _logger.LogWarning("The PackageHandler cannot be found.");
+                this._logger.LogWarning("The PackageHandler cannot be found.");
             }
             else
             {
-                Func<IAppSession, PackageHandlingException<TPackageInfo>, ValueTask<bool>> errorHandler = serviceProvider.GetService<Func<IAppSession, PackageHandlingException<TPackageInfo>, ValueTask<bool>>>()
-                    ?? OnSessionErrorAsync;
+                var errorHandler = serviceProvider.GetService<Func<IAppSession, PackageHandlingException<TPackageInfo>, ValueTask<bool>>>()
+                    ?? this.OnSessionErrorAsync;
 
-                _packageHandlingScheduler = serviceProvider.GetService<IPackageHandlingScheduler<TPackageInfo>>()
+                this._packageHandlingScheduler = serviceProvider.GetService<IPackageHandlingScheduler<TPackageInfo>>()
                     ?? new KestrelPackageHandlingScheduler<TPackageInfo>();
-                _packageHandlingScheduler.Initialize(packageHandler, errorHandler);
+                this._packageHandlingScheduler.Initialize(packageHandler, errorHandler);
             }
         }
 
         public override async Task OnConnectedAsync(ConnectionContext connection)
         {
             // required for websocket transport to work
-            ITransferFormatFeature transferFormatFeature = connection.Features.Get<ITransferFormatFeature>();
+            var transferFormatFeature = connection.Features.Get<ITransferFormatFeature>();
             if (transferFormatFeature != null)
             {
                 transferFormatFeature.ActiveFormat = TransferFormat.Binary;
             }
 
-            _logger.LogInformation(connection.ConnectionId + " connected");
+            this._logger.LogInformation(connection.ConnectionId + " connected");
 
             // 创建一个IChannel
-            var channel = new KestrelPipeChannel<TPackageInfo>(_pipelineFilterFactory.Create("123"), _serverOptions, connection);
+            var channel = new KestrelPipeChannel<TPackageInfo>(this._pipelineFilterFactory.Create("123"), this._serverOptions, connection);
 
             // session
-            KestrelSession session = _sessionFactory.Create() as KestrelSession;
+            var session = this._sessionFactory.Create() as KestrelSession;
             session.SessionID = connection.ConnectionId;
             await this.HandleSessionAscyn(session, channel);
         }
@@ -84,11 +84,11 @@ namespace SuperSocket.Server.AspNetCore
 
         private void InitializeMiddlewares()
         {
-            this.Middlewares = _serviceProvider.GetServices<IMiddleware>()
+            this.Middlewares = this._serviceProvider.GetServices<IMiddleware>()
                 .OrderBy(m => m.Order)
                 .ToArray();
 
-            foreach (IMiddleware m in this.Middlewares)
+            foreach (var m in this.Middlewares)
             {
                 m.Start(null);
             }
@@ -96,13 +96,13 @@ namespace SuperSocket.Server.AspNetCore
 
         private ValueTask<bool> OnSessionErrorAsync(IAppSession session, PackageHandlingException<TPackageInfo> exception)
         {
-            _logger.LogError(exception, $"Session[{session.SessionID}]: session exception.");
+            this._logger.LogError(exception, $"Session[{session.SessionID}]: session exception.");
             return new ValueTask<bool>(true);
         }
 
         private async ValueTask HandleSessionAscyn(KestrelSession session, IChannel channel)
         {
-            if (!await InitializeSession(session, channel))
+            if (!await this.InitializeSession(session, channel))
             {
                 return;
             }
@@ -111,24 +111,24 @@ namespace SuperSocket.Server.AspNetCore
             {
                 channel.Start();
 
-                await FireSessionConnectedEvent(session);
+                await this.FireSessionConnectedEvent(session);
 
-                IChannel<TPackageInfo> packageChannel = channel as IChannel<TPackageInfo>;
-                IPackageHandlingScheduler<TPackageInfo> packageHandlingScheduler = _packageHandlingScheduler;
+                var packageChannel = channel as IChannel<TPackageInfo>;
+                var packageHandlingScheduler = this._packageHandlingScheduler;
 
-                await foreach (TPackageInfo p in packageChannel.RunAsync())
+                await foreach (var p in packageChannel.RunAsync())
                 {
                     await packageHandlingScheduler.HandlePackage(session, p);
                 }
             }
             catch (Exception e)
             {
-                _logger.LogError(e, $"Failed to handle the session {session.SessionID}.");
+                this._logger.LogError(e, $"Failed to handle the session {session.SessionID}.");
             }
             finally
             {
-                CloseReason closeReason = channel.CloseReason ?? CloseReason.Unknown;
-                await FireSessionClosedEvent(session, closeReason);
+                var closeReason = channel.CloseReason ?? CloseReason.Unknown;
+                await this.FireSessionClosedEvent(session, closeReason);
             }
         }
 
@@ -138,20 +138,20 @@ namespace SuperSocket.Server.AspNetCore
 
             if (channel is IPipeChannel pipeChannel)
             {
-                pipeChannel.PipelineFilter.Context = CreatePipelineContext(session);
+                pipeChannel.PipelineFilter.Context = this.CreatePipelineContext(session);
             }
 
-            IMiddleware[] middlewares = this.Middlewares;
+            var middlewares = this.Middlewares;
 
             if (middlewares != null && middlewares.Length > 0)
             {
-                for (int i = 0; i < middlewares.Length; i++)
+                for (var i = 0; i < middlewares.Length; i++)
                 {
-                    IMiddleware middleware = middlewares[i];
+                    var middleware = middlewares[i];
 
                     if (!await middleware.RegisterSession(session))
                     {
-                        _logger.LogWarning($"A session from {session.RemoteEndPoint} was rejected by the middleware {middleware.GetType().Name}.");
+                        this._logger.LogWarning($"A session from {session.RemoteEndPoint} was rejected by the middleware {middleware.GetType().Name}.");
                         return false;
                     }
                 }
@@ -175,17 +175,17 @@ namespace SuperSocket.Server.AspNetCore
                 }
             }
 
-            _logger.LogInformation($"A new session connected: {session.SessionID}");
+            this._logger.LogInformation($"A new session connected: {session.SessionID}");
 
             try
             {
-                Interlocked.Increment(ref _sessionCount);
+                Interlocked.Increment(ref this._sessionCount);
                 await session.FireSessionConnectedAsync();
-                await OnSessionConnectedAsync(session);
+                await this.OnSessionConnectedAsync(session);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "There is one exception thrown from the event handler of SessionConnected.");
+                this._logger.LogError(e, "There is one exception thrown from the event handler of SessionConnected.");
             }
         }
 
@@ -199,19 +199,19 @@ namespace SuperSocket.Server.AspNetCore
                 }
             }
 
-            _logger.LogInformation($"The session disconnected: {session.SessionID} ({reason})");
+            this._logger.LogInformation($"The session disconnected: {session.SessionID} ({reason})");
 
             try
             {
-                Interlocked.Decrement(ref _sessionCount);
+                Interlocked.Decrement(ref this._sessionCount);
 
-                CloseEventArgs closeEventArgs = new CloseEventArgs(reason);
+                var closeEventArgs = new CloseEventArgs(reason);
                 await session.FireSessionClosedAsync(closeEventArgs);
-                await OnSessionClosedAsync(session, closeEventArgs);
+                await this.OnSessionClosedAsync(session, closeEventArgs);
             }
             catch (Exception exc)
             {
-                _logger.LogError(exc, "There is one exception thrown from the event of OnSessionClosed.");
+                this._logger.LogError(exc, "There is one exception thrown from the event of OnSessionClosed.");
             }
         }
 
