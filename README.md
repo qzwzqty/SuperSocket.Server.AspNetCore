@@ -1,2 +1,2 @@
 # SuperSocket.Server.AspNetCore
-Host SuperSocket Server using ASP.NET Core Kestrel
+Host single SuperSocket Server using ASP.NET Core Kestrel
