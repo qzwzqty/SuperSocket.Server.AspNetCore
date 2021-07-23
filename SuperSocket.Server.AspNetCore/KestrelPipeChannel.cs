@@ -18,7 +18,7 @@ namespace SuperSocket.Server.AspNetCore
 
         public Pipe Out => throw new NotImplementedException();
 
-        public IPipelineFilter PipelineFilter => _pipelineFilter;
+        public IPipelineFilter PipelineFilter => this._pipelineFilter;
 
         protected SemaphoreSlim SendLock { get; } = new SemaphoreSlim(1, 1);
 
@@ -43,13 +43,13 @@ namespace SuperSocket.Server.AspNetCore
 
         public override void Start()
         {
-            _readsTask = ReceivePacketAsync();
-            WaitHandleClosing();
+            this._readsTask = this.ReceivePacketAsync();
+            this.WaitHandleClosing();
         }
 
         public override async IAsyncEnumerable<TPackageInfo> RunAsync()
         {
-            if (_readsTask == null)
+            if (this._readsTask == null)
             {
                 throw new Exception("The channel has not been started yet.");
             }
@@ -59,7 +59,7 @@ namespace SuperSocket.Server.AspNetCore
                 TPackageInfo package = default;
                 try
                 {
-                    package = _packMessageQueue.Take(_cts.Token);
+                    package = this._packMessageQueue.Take(this._cts.Token);
                 }
                 catch (Exception)
                 {
@@ -67,7 +67,7 @@ namespace SuperSocket.Server.AspNetCore
 
                 if (package == null)
                 {
-                    await HandleClosing();
+                    await this.HandleClosing();
                     yield break;
                 }
 
@@ -80,8 +80,8 @@ namespace SuperSocket.Server.AspNetCore
             try
             {
                 await this.SendLock.WaitAsync();
-                PipeWriter writer = _connection.Transport.Output;
-                CheckChannelOpen();
+                var writer = this._connection.Transport.Output;
+                this.CheckChannelOpen();
                 await writer.WriteAsync(buffer);
                 await writer.FlushAsync();
             }
@@ -96,8 +96,8 @@ namespace SuperSocket.Server.AspNetCore
             try
             {
                 await this.SendLock.WaitAsync();
-                PipeWriter writer = _connection.Transport.Output;
-                CheckChannelOpen();
+                var writer = this._connection.Transport.Output;
+                this.CheckChannelOpen();
                 packageEncoder.Encode(writer, package);
                 await writer.FlushAsync();
             }
@@ -112,7 +112,7 @@ namespace SuperSocket.Server.AspNetCore
             try
             {
                 await this.SendLock.WaitAsync();
-                PipeWriter writer = _connection.Transport.Output;
+                var writer = this._connection.Transport.Output;
                 write(writer);
                 await writer.FlushAsync();
             }
@@ -125,24 +125,24 @@ namespace SuperSocket.Server.AspNetCore
         public override async ValueTask CloseAsync(CloseReason closeReason)
         {
             this.CloseReason = closeReason;
-            _cts.Cancel();
-            await HandleClosing();
+            this._cts.Cancel();
+            await this.HandleClosing();
         }
 
         public override async ValueTask DetachAsync()
         {
-            _isDetaching = true;
-            _cts.Cancel();
-            await HandleClosing();
-            _isDetaching = false;
+            this._isDetaching = true;
+            this._cts.Cancel();
+            await this.HandleClosing();
+            this._isDetaching = false;
         }
 
         #region 读写数据
 
         private async Task ReceivePacketAsync()
         {
-            PipeReader input = _connection.Transport.Input;
-            CancellationTokenSource cts = _cts;
+            var input = this._connection.Transport.Input;
+            var cts = this._cts;
 
             while (!cts.IsCancellationRequested)
             {
@@ -154,25 +154,25 @@ namespace SuperSocket.Server.AspNetCore
                 }
                 catch (Exception e)
                 {
-                    if (!IsIgnorableException(e))
+                    if (!this.IsIgnorableException(e))
                     {
-                        OnError("Failed to read from the pipe", e);
+                        this.OnError("Failed to read from the pipe", e);
                     }
 
                     break;
                 }
 
-                ReadOnlySequence<byte> buffer = result.Buffer;
+                var buffer = result.Buffer;
 
-                SequencePosition consumed = buffer.Start;
-                SequencePosition examined = buffer.End;
+                var consumed = buffer.Start;
+                var examined = buffer.End;
 
                 if (result.IsCanceled)
                 {
                     break;
                 }
 
-                bool completed = result.IsCompleted;
+                var completed = result.IsCompleted;
 
                 try
                 {
@@ -181,7 +181,7 @@ namespace SuperSocket.Server.AspNetCore
                         // 设置时间
                         this.LastActiveTime = DateTimeOffset.Now;
 
-                        if (!ReaderBuffer(ref buffer, out consumed, out examined))
+                        if (!this.ReaderBuffer(ref buffer, out consumed, out examined))
                         {
                             completed = true;
                             break;
@@ -195,10 +195,10 @@ namespace SuperSocket.Server.AspNetCore
                 }
                 catch (Exception e)
                 {
-                    OnError("Protocol error", e);
+                    this.OnError("Protocol error", e);
 
                     // close the connection if get a protocol error
-                    Close();
+                    this.Close();
                     break;
                 }
                 finally
@@ -208,6 +208,9 @@ namespace SuperSocket.Server.AspNetCore
             }
 
             input.Complete();
+
+            // EOF
+            this._packMessageQueue.Add(default);
         }
 
         private bool ReaderBuffer(ref ReadOnlySequence<byte> buffer, out SequencePosition consumed, out SequencePosition examined)
@@ -215,32 +218,32 @@ namespace SuperSocket.Server.AspNetCore
             consumed = buffer.Start;
             examined = buffer.End;
 
-            long bytesConsumedTotal = 0L;
+            var bytesConsumedTotal = 0L;
 
-            int maxPackageLength = this.Options.MaxPackageLength;
+            var maxPackageLength = this.Options.MaxPackageLength;
 
-            SequenceReader<byte> seqReader = new SequenceReader<byte>(buffer);
+            var seqReader = new SequenceReader<byte>(buffer);
 
             while (true)
             {
-                IPipelineFilter<TPackageInfo> currentPipelineFilter = _pipelineFilter;
-                bool filterSwitched = false;
+                var currentPipelineFilter = this._pipelineFilter;
+                var filterSwitched = false;
 
-                TPackageInfo packageInfo = currentPipelineFilter.Filter(ref seqReader);
+                var packageInfo = currentPipelineFilter.Filter(ref seqReader);
 
-                IPipelineFilter<TPackageInfo> nextFilter = currentPipelineFilter.NextFilter;
+                var nextFilter = currentPipelineFilter.NextFilter;
 
                 if (nextFilter != null)
                 {
                     nextFilter.Context = currentPipelineFilter.Context; // pass through the context
-                    _pipelineFilter = nextFilter;
+                    this._pipelineFilter = nextFilter;
                     filterSwitched = true;
                 }
 
-                long bytesConsumed = seqReader.Consumed;
+                var bytesConsumed = seqReader.Consumed;
                 bytesConsumedTotal += bytesConsumed;
 
-                long len = bytesConsumed;
+                var len = bytesConsumed;
 
                 // nothing has been consumed, need more data
                 if (len == 0)
@@ -250,9 +253,9 @@ namespace SuperSocket.Server.AspNetCore
 
                 if (maxPackageLength > 0 && len > maxPackageLength)
                 {
-                    OnError($"Package cannot be larger than {maxPackageLength}.");
+                    this.OnError($"Package cannot be larger than {maxPackageLength}.");
                     // close the the connection directly
-                    Close();
+                    this.Close();
                     return false;
                 }
 
@@ -274,7 +277,7 @@ namespace SuperSocket.Server.AspNetCore
                     // reset the pipeline filter after we parse one full package
                     currentPipelineFilter.Reset();
 
-                    _packMessageQueue.Add(packageInfo);
+                    this._packMessageQueue.Add(packageInfo);
                 }
 
                 if (seqReader.End) // no more data
@@ -296,7 +299,7 @@ namespace SuperSocket.Server.AspNetCore
 
         private async void WaitHandleClosing()
         {
-            await HandleClosing();
+            await this.HandleClosing();
         }
 
         private void OnError(string message, Exception e = null)
@@ -323,31 +326,31 @@ namespace SuperSocket.Server.AspNetCore
         {
             try
             {
-                await _readsTask;
-                _packMessageQueue?.Dispose();
-                _packMessageQueue = null;
+                await this._readsTask;
+                this._packMessageQueue?.Dispose();
+                this._packMessageQueue = null;
             }
             catch (OperationCanceledException)
             {
             }
             catch (Exception e)
             {
-                OnError("Unhandled exception in the method PipeChannel.Run.", e);
+                this.OnError("Unhandled exception in the method PipeChannel.Run.", e);
             }
             finally
             {
-                if (!_isDetaching && !this.IsClosed)
+                if (!this._isDetaching && !this.IsClosed)
                 {
                     try
                     {
-                        Close();
-                        OnClosed();
+                        this.Close();
+                        this.OnClosed();
                     }
                     catch (Exception exc)
                     {
-                        if (!IsIgnorableException(exc))
+                        if (!this.IsIgnorableException(exc))
                         {
-                            OnError("Unhandled exception in the method PipeChannel.Close.", exc);
+                            this.OnError("Unhandled exception in the method PipeChannel.Close.", exc);
                         }
                     }
                 }
@@ -357,8 +360,8 @@ namespace SuperSocket.Server.AspNetCore
         private void Close()
         {
             // 此方法会断开客户端的Tcp连接
-            _connection.Transport.Input?.Complete();
-            _connection.Transport.Output?.Complete();
+            this._connection.Transport.Input?.Complete();
+            this._connection.Transport.Output?.Complete();
         }
 
         private bool IsIgnorableException(Exception e)
@@ -370,7 +373,7 @@ namespace SuperSocket.Server.AspNetCore
 
             if (e.InnerException != null)
             {
-                return IsIgnorableException(e.InnerException);
+                return this.IsIgnorableException(e.InnerException);
             }
 
             return false;
