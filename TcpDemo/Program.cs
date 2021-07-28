@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +26,12 @@ namespace TcpDemo
 
                         // TCP
                         opt.UseTcp<DemoPackInfo>();
+
+                        // TCP 8007
+                        opt.ListenLocalhost(8007, builder =>
+                        {
+                            builder.UseConnectionHandler<MyConnectionHanlder>();
+                        });
 
                         // http
                         opt.ListenAnyIP(configuration.GetValue<int>("App:HttpPort"), configure => configure.Protocols = HttpProtocols.Http1);

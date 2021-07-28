@@ -1,9 +1,11 @@
 ﻿using System;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SuperSocket.Command;
 using SuperSocket.ProtoBase;
+using SuperSocket.Server.AspNetCore.WebSockets;
 using SuperSocket.SessionContainer;
 
 namespace SuperSocket.Server.AspNetCore
@@ -76,6 +78,14 @@ namespace SuperSocket.Server.AspNetCore
         {
             services.Configure(configurator);
             return services;
+        }
+
+        public static IApplicationBuilder UseSuperSocketWebSocket<TReceivePackage>(this IApplicationBuilder app, string pattern)
+        {
+            app.UseWebSockets();
+            app.UseMiddleware<WebSocketMiddleware<TReceivePackage>>(pattern);
+
+            return app;
         }
 
         public static IServiceCollection ConfigureSuperSocket(this IServiceCollection services, IConfiguration configuration)

@@ -8,11 +8,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperSocket.Server.AspNetCore", "SuperSocket.Server.AspNetCore\SuperSocket.Server.AspNetCore.csproj", "{E9176211-E877-4B30-8BAF-CC407D668BEB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SuperSocket.Server.AspNetCore", "SuperSocket.Server.AspNetCore\SuperSocket.Server.AspNetCore.csproj", "{E9176211-E877-4B30-8BAF-CC407D668BEB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TcpDemo", "TcpDemo\TcpDemo.csproj", "{C3294B63-F26E-4FFB-8BAD-DFDFF7CB124D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketDemo", "WebSocketDemo\WebSocketDemo.csproj", "{EBCF44EA-379A-41C7-938B-83E9BAC277BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebSocketDemo", "WebSocketDemo\WebSocketDemo.csproj", "{EBCF44EA-379A-41C7-938B-83E9BAC277BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketDemo2", "WebSocketDemo2\WebSocketDemo2.csproj", "{C1F44B4F-701D-49E5-81D7-D70BBF2FB42C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +34,10 @@ Global
 		{EBCF44EA-379A-41C7-938B-83E9BAC277BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBCF44EA-379A-41C7-938B-83E9BAC277BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBCF44EA-379A-41C7-938B-83E9BAC277BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1F44B4F-701D-49E5-81D7-D70BBF2FB42C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1F44B4F-701D-49E5-81D7-D70BBF2FB42C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1F44B4F-701D-49E5-81D7-D70BBF2FB42C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1F44B4F-701D-49E5-81D7-D70BBF2FB42C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
