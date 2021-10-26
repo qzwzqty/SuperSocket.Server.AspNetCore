@@ -12,6 +12,8 @@ namespace SuperSocket.Server.AspNetCore
 {
     public static class KestrelServerExtensions
     {
+        // TODO：Multiple Server
+
         public static void UseTcp<TPackageInfo>(this KestrelServerOptions options)
         {
             var serverOptions = options.ApplicationServices.GetRequiredService<IOptions<ServerOptions>>()?.Value;
