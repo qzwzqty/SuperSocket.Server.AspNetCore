@@ -98,6 +98,10 @@ namespace SuperSocket.Server.AspNetCore.WebSockets
                     throw;
                 }
             }
+            else
+            {
+                await this._next.Invoke(context);
+            }
         }
 
         #region 私有方法
